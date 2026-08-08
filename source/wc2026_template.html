@@ -530,7 +530,7 @@
   <header>
     <div class="kicker">The whole World Cup, predicted game by game</div>
     <h1>World Cup <span class="yr">2026</span> Forecast</h1>
-    <p class="sub">The whole World Cup, all 104 matches across the group stage and knockouts, played out 50,000 times, five different ways, from past results to the bookmakers' odds. The tournament is done, so every prediction now sits beside what actually happened.</p>
+    <p class="sub">Every match of the 2026 World Cup, played out 50,000 times, five ways, from past results to the bookmakers' odds, with the real result beside each prediction.</p>
     <div class="meta-row" id="meta"></div>
   </header>
 
@@ -553,7 +553,7 @@
       <button data-v="day0" data-tip="The frozen pre-tournament forecast, before any games were played.">Day 0</button>
     </div>
     <h2 class="sec-h" id="resultsHead" style="display:none">How it finished</h2>
-    <p class="lead" id="resultsLead" style="display:none">The final four and how the last two games were settled. The pre-tournament forecast is below, for the record.</p>
+    <p class="lead" id="resultsLead" style="display:none">The final four. The pre-tournament forecast is below.</p>
     <div class="results" id="results" style="display:none"></div>
     <div class="podium" id="podium"></div>
     <h2 class="sec-h" id="titleHead">Who lifts the trophy</h2>
@@ -576,7 +576,7 @@
   <!-- GROUPS -->
   <section id="groups" role="tabpanel" aria-labelledby="tab-groups" tabindex="0">
     <h2 class="sec-h">Group winner odds &amp; match-by-match</h2>
-    <p class="lead">Each group's final standings beside where the model predicted the teams to finish: who beat the forecast, who fell short. Open a group for the match-by-match predictions and results.</p>
+    <p class="lead">Each final table against the model's predicted finish. Open a group for its match-by-match predictions.</p>
     <div class="scoreboard" id="grpScore"></div>
     <div class="grid" id="groupGrid"></div>
     <div id="thirdsTable"></div>
@@ -585,7 +585,7 @@
   <!-- KNOCKOUT PHASE (placeholder, built once the round of 32 is set) -->
   <section id="knockout" role="tabpanel" aria-labelledby="tab-knockout" tabindex="0">
     <h2 class="sec-h">Knockout bracket</h2>
-    <p class="lead">The model's pick and advance odds for every knockout match, beside the real result, color-coded round by round. Predicted scores are the most likely outcome of simulating the tie (90 minutes, extra time when level, penalties if still level), so they are usually decisive.</p>
+    <p class="lead">The model's pick and advance odds for every knockout tie, beside the real result. Predicted scores are the most likely outcome of simulating the tie, so usually decisive.</p>
     <div class="scoreboard" id="koScore"></div>
     <div id="koBracket"></div>
   </section>
@@ -603,7 +603,7 @@
   <!-- TOP SCORERS -->
   <section id="topscorers" role="tabpanel" aria-labelledby="tab-topscorers" tabindex="0">
     <h2 class="sec-h">Golden Boot</h2>
-    <p class="lead">The bookmakers' pre-tournament pick for the Golden Boot, next to who actually scored. The model rates teams, not players, so the expected column came from the bookmakers and never moved.</p>
+    <p class="lead">The bookmakers' pre-tournament Golden Boot pick beside who actually scored. The model rates teams, not players, so the expected column is the market's, not the simulation's.</p>
     <div class="scgrid">
       <div class="sccol exp">
         <div class="scol-h"><span>Expected</span><small>Day 0 market</small></div>
@@ -1326,7 +1326,7 @@
     show('podium', !showRes, 'grid'); show('titleHead', !showRes); show('titleLead', !showRes);
     show('titleLegend', !showRes, 'flex'); show('raceBars', !showRes);
     if(showRes){ const kl=document.getElementById('koLead');
-      if(kl) kl.textContent='How far each team got in the pre-tournament forecast: how often they reached each round across the 50,000 simulations, before a ball was kicked.'; }
+      if(kl) kl.textContent='How often each team reached each round in the pre-tournament forecast, across the 50,000 simulations.'; }
 
     // podium
     const podCols=['p1','p2','p3'], rkTxt=['1st favorite','2nd favorite','3rd favorite'];
