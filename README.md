@@ -4,167 +4,91 @@
 
 **Live: https://wc2026forecast.xyz/**
 
-A Monte Carlo forecast of the 2026 World Cup. It plays the full tournament, all 104 matches across the
-group stage and knockout bracket, 50,000 times under five match-rating models and reports each team's
-probability of reaching every stage. As games are played, real results overlay onto the predictions and the odds
-re-simulate to condition on what has happened, so you see both where the forecast is holding up and
-how the title race is shifting against its Day 0 starting point.
+A Monte Carlo forecast of the 2026 World Cup. The full tournament, all 104 matches, played out 50,000 times under five match-rating models, giving each team's odds to reach every stage. The real result sits beside every prediction, and the odds are conditioned on the games as they were played.
 
-The app is a single self-contained `index.html` with no dependencies; switch between the five models
-in the page.
+A single self-contained `index.html`, no dependencies. Pick a model in the page.
 
 ## Models
 
-All five share the same tournament engine (FIFA Annex C round-of-32, extra time, penalties) and
-differ only in how each match's expected goals are estimated.
+All five share one tournament engine (FIFA Annex C round-of-32, extra time, penalties) and differ only in how each match's expected goals are set.
 
-- **Pure Elo** - ranks teams on results alone, like a chess rating. Simple, and the most favorite-heavy of the five.
-- **Pure Goals (Dixon-Coles)** - learns each team's attack and defense from 15,751 internationals and predicts actual scorelines, not just a winner.
-- **Hybrid** - the average of Pure Elo and Dixon-Coles. The best performer on out-of-sample tests.
-- **Hybrid + Market** - the Hybrid blended halfway with the ratings implied by the betting market.
-- **Pure Market** - the betting market alone, calibrated so the simulated title odds match the published ones. The default view.
+- **Pure Elo** - results only, like a chess rating. The most favorite-heavy.
+- **Pure Goals (Dixon-Coles)** - each team's attack and defense from 15,751 internationals; predicts scorelines, not just winners.
+- **Hybrid** - the average of the two. Best on out-of-sample tests.
+- **Hybrid + Market** - the Hybrid blended halfway with the market-implied ratings.
+- **Pure Market** - the betting market alone, calibrated to the published title odds. The default.
 
-Methodology and validation are in [source/REPORT.md](source/REPORT.md).
+Methodology and validation: [source/REPORT.md](source/REPORT.md).
 
-## What the app shows
+## Tabs
 
-One model selected at a time, chosen from a dropdown that carries a one-line description of each, across these tabs:
-
-- **Title Odds** - each team's chance of winning the tournament, plus how often it reaches each round, against Opta and the betting market as a sanity check. Once games are played the odds re-condition on the results, with a Day 0 marker on each bar showing the pre-tournament starting point and the move since; the reach-round table can flip to show the change since Day 0.
-- **Schedule** - every fixture by kickoff time, the model's predicted score, and the real result as it comes in, color-coded (dark green exact, green right result, red wrong).
-- **Groups & Scores** - the live group table against where the model predicted each team to finish, marking who is ahead of the forecast and who is behind. The qualifying positions are flagged green: the top two, plus a third-placed team once it is among the eight best thirds that advance. Expand a group for its match predictions and results.
-- **Knockout Phase** - the predicted bracket against the real results, filling in match by match as each group finishes: a tie appears the moment both its teams are mathematically determined, then shows an in-play/awaiting badge as it kicks off and the real score as it lands. Predicted scorelines are the most likely final result from simulating the tie (90 minutes, plus extra time added on when level), so they are usually decisive (a 90-minute draw is only about one run in four); the separate chance the tie stays level and goes to penalties is shown alongside.
-- **Top Scorers** - the betting market's pre-tournament Golden Boot pick next to a live leaderboard of who is actually scoring, parsed from the feed. The engine rates teams, not players, so the expected side is the market, not the simulation.
-- **Method & Caveats** - the write-up, the validation, and the honest weaknesses.
+- **Title Odds** - the top four (champion, runners-up, third, fourth) with the deciding scores, and the pre-tournament reach-round forecast below.
+- **Schedule** - every fixture in kickoff order, predicted score beside the real one, color-coded (dark green exact, green right result, red wrong).
+- **Groups** - each final table against the predicted finish. Open a group for its match predictions.
+- **Knockout** - the predicted bracket against the real results, round by round.
+- **Top Scorers** - the market's pre-tournament Golden Boot pick beside who actually scored. The engine rates teams, not players.
+- **Method & Caveats** - the models, validation, and weaknesses.
 
 ## How it works
 
-The simulation is plain Python, no ML framework, all in [`source/`](source/):
+Plain Python, no ML framework, in [`source/`](source/):
 
-- **`wc2026_engine.py`** runs the tournament: the group stage, the eight best third-placed teams, the official FIFA Annex C round-of-32 (all 495 possible line-ups), then the knockout bracket with extra time and penalties. Each match's expected goals come from the chosen model, and the score is drawn from a Dixon-Coles-adjusted Poisson. Conditioned on the played games, it locks those results and samples only the rest.
-- **`make_data.py`** runs the engine twice per model from one shared market calibration, unconditioned (the frozen Day 0 baseline) and conditioned on the played games (the live forecast), and writes both `wc2026_results.json` and `wc2026_baseline.json`. **`fetch_actuals.py`** refreshes the played-results file (`wc2026_actuals.json`) from the openfootball feed.
-- **`merge_schedule.py`** folds the official fixture schedule (`wc2026_schedule.json`, from the public openfootball dataset) into the results: the date, kickoff, venue, and the correct home/away side for every group match.
-- **`fit_dc.py`** fits the Dixon-Coles model by weighted maximum-likelihood on 15,751 internationals since 2010 (recent matches count for more). **`build_params.py`** combines those fitted parameters with official Elo ratings into `model_params.json`.
-- **`val_assess.py`** and **`val_market.py`** are the validation: out-of-sample scoring on 1,230 held-out internationals, and a market-versus-model backtest on 5,327 club matches with real closing odds.
+- **`wc2026_engine.py`** - the tournament: group stage, the eight best third-placed teams, the FIFA Annex C round-of-32 (all 495 line-ups), then the bracket with extra time and penalties. Each match's expected goals come from the chosen model; scores are drawn from a Dixon-Coles-adjusted Poisson. Conditioned on played games, it locks those and samples the rest.
+- **`make_data.py`** - runs the engine per model from one market calibration, unconditioned (Day 0 baseline) and conditioned (the forecast), writing `wc2026_results.json` and `wc2026_baseline.json`. **`fetch_actuals.py`** pulled played results from the openfootball feed.
+- **`merge_schedule.py`** - folds the official schedule (date, kickoff, venue, home/away) into the results.
+- **`fit_dc.py`** / **`build_params.py`** - fit Dixon-Coles on 15,751 internationals since 2010 and combine with Elo into `model_params.json`.
+- **`val_assess.py`** / **`val_market.py`** - validation: 1,230 held-out internationals, and a market-vs-model backtest on 5,327 club matches.
 
-The page itself runs no Python. It only reads the pre-computed JSON, which is why it can be a single static file.
+The page runs no Python; it reads the pre-computed JSON, which is why it is one static file.
 
-## Live results and the self-updating forecast
+## Live results
 
-Two layers keep the page current, both backend-free and low-maintenance:
+While the tournament ran, two backend-free layers kept the page current:
 
-- **In the browser (instant).** As games are played, the real result appears next to each prediction.
-  The page fetches results from the public, CORS-enabled [openfootball](https://github.com/openfootball/worldcup)
-  World Cup 2026 feed (no key), caches them in local storage, and refreshes adaptively (faster while a
-  match is in play, paused when the tab is hidden). This overlay is deterministic: it never alters the
-  underlying odds, and if the feed is unreachable the page falls back to predictions only. A kicked-off
-  match shows an "In play" badge, then an "Awaiting result" badge that stays until the feed posts the
-  score (the community feed can lag by hours). A search link on every card (the live badge, and a
-  button on played cards) opens a Google query for the exact match, teams and date plus the score
-  once known, so you can always find it. The badge never expires early, so a played game never
-  reverts to looking unplayed.
-- **The odds themselves (on redeploy).** A scheduled GitHub Action (`.github/workflows/refresh.yml`)
-  re-runs the 50,000-tournament simulation conditioned on the played games and commits the result, so
-  Netlify redeploys. It polls the feed on a windowed cron but only re-simulates when a new result
-  actually lands, and validates the output before committing. Title Odds then shows each team's live
-  chance against its frozen Day 0 baseline.
+- **In the browser** - results appeared beside each prediction, fetched from the public [openfootball](https://github.com/openfootball/worldcup) feed (no key), cached locally, refreshed adaptively. Deterministic: it never changed the odds, and fell back to predictions only if the feed was down.
+- **The odds** - a scheduled GitHub Action re-ran the 50,000-tournament simulation conditioned on new results and committed it, so Netlify redeployed.
 
-Both layers stop a week after the final (the "sundown" cutoff): the page stops polling and the Action
-stops running. The fetch is feed-agnostic: swap `ACT_SRC` and `parseActuals` in the template to use a
-JSON API instead.
+Both stopped after the final. The page is now static: results are baked into the payload, so it renders in full with no feed. The frozen final version is under [`archive/wc2026/`](archive/wc2026/); [REUSE.md](REUSE.md) covers porting the engine to another tournament.
 
 ## Layout
 
-- `index.html` - the built app. Generated, not edited by hand.
-- `netlify.toml` - static hosting configuration.
-- `CLAUDE.md` - contributor notes: the build rule and conventions.
-- `source/` - the simulation engine, schedule, parameters, validation scripts, and the app template. See [source/README.md](source/README.md).
+- `index.html` - the built app. Generated, not hand-edited.
+- `netlify.toml` - static hosting config.
+- `CLAUDE.md` - the build rule and conventions.
+- `source/` - engine, schedule, parameters, validation, and the app template. See [source/README.md](source/README.md).
 
 ## Build
 
-Changes go in `source/wc2026_template.html`; `index.html` is generated from it.
+Edit `source/wc2026_template.html`; `index.html` is generated from it.
 
 ```
 python source/build_app.py          # rebuild index.html
-python source/build_app.py --check  # verify index.html is in sync (CI)
+python source/build_app.py --check  # verify it is in sync (CI)
 ```
 
 ## Tests
 
-A small, dependency-free suite covers the code that keeps the app current, so the self-updating path
-stays trustworthy with no babysitting. CI runs all of it on every push and PR.
+Dependency-free, run in CI on every push and PR:
 
 ```
-python -m unittest discover -s source -p 'test_*.py'   # update pipeline (Python)
-node source/check_app.js                               # build is clean, every script block parses
-node source/test_app.js                                # the in-browser live layer (JavaScript)
+python -m unittest discover -s source -p 'test_*.py'   # update pipeline
+node source/check_app.js                               # build clean, scripts parse
+node source/test_app.js                                # in-browser live layer
 ```
 
-### What the tests guard
-
-The fragile surface is the live layer: it parses a public, hand-edited, free-text feed (openfootball)
-that has no schema and can change format without warning. Most of these tests exist because that feed
-has bitten us, so they pin the exact edge cases:
-
-- **Feed parsing** (`test_pipeline.py`, `test_app.js`). A played game with no half-time score still
-  parses, so it is not silently dropped from the conditioned odds. An unplayed " v " fixture is
-  skipped, not invented. Official FIFA names the feed warns it may switch to (Cote d'Ivoire, Korea
-  Republic, IR Iran, Cabo Verde, Congo DR, Turkiye) map to the engine names, so a renamed game is not
-  lost. A name that maps to nothing is flagged and skipped, never guessed into a phantom knockout tie.
-- **Scorer parsing** (`test_app.js`). A penalty written in the feed's shorthand `(p)` credits the
-  scorer instead of inventing a player called "p". An own goal `(og)` does not credit the scorer. A
-  scorer block that spans several lines is gathered whole. CRLF line endings parse the same as LF.
-- **Live badge clock** (`test_app.js`). A played game whose result the feed has not posted yet keeps
-  its "Awaiting result" badge with no upper time bound, instead of silently looking unplayed.
-- **Knockout overlay** (`test_app.js`). A knockout tie's result resolves from the server-conditioned
-  run or, failing that, the live feed keyed by date, with the advancer derived from a decisive score
-  and left unknown on a draw (a shootout the score cannot read).
-- **Score colouring** (`test_app.js`). The predicted-versus-actual colour is graded on the scoreline
-  the card shows, so a drawn prediction can never read green against a decisive result.
-- **Orientation and engine invariants** (`test_pipeline.py`). Reorienting a match to the official
-  home/away is its own inverse. The engine conditions on played games and validates its output
-  (champion shares sum near 100, reach-round odds never rise from one round to the next). The engine
-  tests need numpy and skip when it is absent, as in light CI; the refresh Action installs it and runs
-  them before committing a refreshed forecast.
-
-### End to end
-
-`source/test_feed_sample.txt` is a small, representative feed that packs every edge case above into
-one file. Both `test_pipeline.py` and `test_app.js` run it through their full parsers and assert the
-overlay, the group rows, the knockout split, and the scorer board, so a feed-format change cannot
-regress one side without failing the suite. When you find a new feed quirk, add a line to that fixture
-and an assertion to both suites.
-
-To regenerate the simulation, run `python source/make_data.py 50000` (the live + Day 0 generator,
-which conditions on `wc2026_actuals.json`), then `python source/merge_schedule.py` to fold the
-fixture schedule back in, then rebuild. `python source/fetch_actuals.py` refreshes the played-results
-file from the feed first.
+The fragile surface was the live layer, which parsed a hand-edited, schema-less feed. The tests pin the cases that bit it: feed parsing (missing half-time score, unplayed fixtures, official-name remaps), scorer parsing (`(p)` penalties, `(og)` own goals, multi-line blocks, CRLF), the live badge clock (a played-but-unposted game keeps its badge), knockout overlay (result from the server run or the feed, advancer left unknown on a draw), score colouring (graded on the score shown), and engine invariants (reorientation is its own inverse; reach-round odds never rise round to round). `source/test_feed_sample.txt` packs every case into one fixture both suites run.
 
 ## Run locally
 
-Open `index.html` in a browser, or run `python -m http.server` from the repository root.
+Open `index.html`, or `python -m http.server` from the repo root.
 
 ## Deployment
 
-Deployed on Netlify, served from the repository root and redeployed on each push to `main`. Live at
-<https://wc2026forecast.xyz/>, with a backup at <https://wc2026forecast.netlify.app/>. Security
-headers (a Content-Security-Policy, `frame-ancestors`/`X-Frame-Options` deny, nosniff) are set in
-`netlify.toml`, and `robots.txt`, `sitemap.xml`, and JSON-LD structured data are served for search
-engines and social cards.
-
-## Status
-
-Shipped: fixtures sorted by date with official home/away; live results overlaid with color-coded
-accuracy; a live group table against the predicted finish; conditional live title odds with a Day 0
-before/after; the autonomous refresh; the Top Scorers tab; and the predicted-vs-actual knockout
-bracket, which fills in match by match as each group finishes (a tie locks the moment both its teams
-are mathematically determined, even before the group stage fully ends) and lights up each tie with an
-in-play/awaiting badge and the real score as it lands.
+Netlify, from the repo root, redeployed on each push to `main`. Live at <https://wc2026forecast.xyz/> (backup <https://wc2026forecast.netlify.app/>). Security headers, `robots.txt`, `sitemap.xml`, and JSON-LD are configured in `netlify.toml` and the repo root.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). The forecast draws on public data (openfootball, CC0; eloratings.net),
-which keeps its own terms.
+MIT, see [LICENSE](LICENSE). Public data (openfootball, CC0; eloratings.net) keeps its own terms.
 
 ## Disclaimer
 
